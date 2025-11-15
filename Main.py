@@ -1,5 +1,9 @@
 from Calculator import Calculator
+import tkinter as tk
+
 
 if __name__ == "__main__":
-    calc = Calculator()
-    calc.Run()
+    root = tk.Tk()
+    calc = Calculator(root)
+    calc.set_calculator_visual()
+    calc.run()

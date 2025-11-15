@@ -1,130 +1,190 @@
-from tkinter import *
+import tkinter as tk
+from enum import Enum
+from typing import Callable
+
+
+class ButtonsLabels(Enum):
+    C = "C"
+    DEL = "DEL"
+    MULTIPLY = "*"
+    EQUAL = "="
+    ONE = "1"
+    TWO = "2"
+    THREE = "3"
+    DIVIDE = "/"
+    FOUR = "4"
+    FIVE = "5"
+    SIX = "6"
+    PLUS = "+"
+    SEVEN = "7"
+    EIGHT = "8"
+    NINE = "9"
+    MINUS = "-"
+    OPEN_BRACKET = "("
+    ZERO = "0"
+    CLOSE_BRACKET = ")"
+    POWER = "X^2"
 
 
 class Calculator:
-    def __init__(self):  # Что означает __init__ нижние подчеркивания?
-        self.root = Tk()
-        self.root.title("Calculator")
-        self.root.geometry("485x510")
-        self.bg = "#999"
-        self.root["bg"] = self.bg
-        self.root.resizable(False, False)
+    def __init__(self, root_tk: tk.Tk, background_color: str = "#000") -> None:
+        self.calc_visual = CalculatorVisual(root_tk, controller=self)
+        self.root = root_tk
+        self.formula = "0"
+        self.error_message = ""
+
+    def set_calculator_visual(self) -> None:
+        self.calc_visual.set_calculator_frame()
+
+    def button_pressed(self, operation: ButtonsLabels) -> None:
+        self.error_message = ""
+        match operation:
+            case ButtonsLabels.C:
+                self.formula = "0"
+            case ButtonsLabels.DEL:
+                self.formula = self.formula[:-1]
+            case ButtonsLabels.POWER:
+                result, error = CalculatorCalculation.calculate_power_string(
+                    self.formula
+                )
+                if error != "":
+                    self.error_message = error
+                else:
+                    self.formula = result
+            case ButtonsLabels.EQUAL:
+                result, error = CalculatorCalculation.calculate_string(self.formula)
+                if error != "":
+                    self.error_message = error
+                else:
+                    self.formula = result
+            case ButtonsLabels.PLUS:
+                if self.formula[-1] != "+":
+                    if self.formula == "0":
+                        self.formula = ""
+                    self.formula += operation.value
+            case ButtonsLabels.MINUS:
+                if self.formula[-1] != "-":
+                    if self.formula == "0":
+                        self.formula = ""
+                    self.formula += operation.value
+            case ButtonsLabels.MULTIPLY:
+                if self.formula[-1] != "*":
+                    if self.formula == "0":
+                        self.formula = ""
+                    self.formula += operation.value
+            case ButtonsLabels.DIVIDE:
+                if self.formula[-1] != "/":
+                    if self.formula == "0":
+                        self.formula = ""
+                    self.formula += operation.value
+            case _:
+                if self.formula == "0":
+                    self.formula = ""
+                self.formula += operation.value
+
+        self.calc_visual.update(self.formula, self.error_message)
+
+    def run(self) -> None:
+        self.root.mainloop()
+
+
+class CalculatorVisual:
+    def __init__(
+        self, root_tk: tk.Tk, controller: Calculator, background_color: str = "#000"
+    ) -> None:
+        self.root = root_tk
+        self.controller = controller
+        self.bg = background_color
 
         self.formula = "0"
-        self.errormessage = ""
+        self.error_message = ""
 
-        self.lbl = Label(
+        self.formula_label: tk.Label
+        self.error_label: tk.Label
+
+        self.buttons_labels = ButtonsLabels
+
+    def set_calculator_frame(self) -> None:
+        self.root.title("Calculator")
+        self.root.geometry("485x510")
+        self.root.resizable(False, False)
+        self.root["bg"] = self.bg
+
+        self.formula_label = tk.Label(
             self.root,
             text=self.formula,
             font=("Times New Roman", 21, "bold"),
             bg=self.bg,
             fg="#FFF",
         )
-        self.lbl.place(x=11, y=30)
+        self.formula_label.place(x=11, y=30)
 
-        self.erlbl = Label(
+        self.error_label = tk.Label(
             self.root,
-            text=self.errormessage,
+            text=self.error_message,
             font=("Times New Roman", 12, "normal"),
             bg=self.bg,
             fg="#FFF",
         )
-        self.erlbl.place(x=11, y=70)
-
-        buttons = [
-            "C",
-            "DEL",
-            "*",
-            "=",
-            "1",
-            "2",
-            "3",
-            "/",
-            "4",
-            "5",
-            "6",
-            "+",
-            "7",
-            "8",
-            "9",
-            "-",
-            "(",
-            "0",
-            ")",
-            "X^2",
-        ]
+        self.error_label.place(x=11, y=70)
 
         x, y = 10, 100
-        for bt in buttons:
-            com = lambda x=bt: self.Calculate(x)
-            Button(
-                self.root, text=bt, bg="#FFF", font=("Times New Roman", 15), command=com
+        for bt in self.buttons_labels:
+            # com = lambda x=bt: self.button_press(x)
+            tk.Button(
+                self.root,
+                text=bt.value,
+                bg="#FFF",
+                font=("Times New Roman", 15),
+                command=self.make_handler(bt),
             ).place(x=x, y=y, width=115, height=79)
             x += 117
             if x > 400:
                 x = 10
                 y += 81
 
-    def Calculate(self, operation):
-        try:
-            self.errormessage = ""
-            match operation:
-                case "C":
-                    self.formula = "0"
-                case "DEL":
-                    self.formula = self.formula[:-1]
-                case "X^2":
-                    value = eval(self.formula)
-                    if abs(value) > 1e10:
-                        self.errormessage = "Too large"
-                    else:
-                        self.formula = str((eval(self.formula)) ** 2)
-                case "=":
-                    value = eval(self.formula)
-                    if abs(value) > 1e10:
-                        self.errormessage = "Too large"
-                    else:
-                        self.formula = str(eval(self.formula))
-                case "+":
-                    if self.formula[-1] != "+":
-                        if self.formula == "0":
-                            self.formula = ""
-                        self.formula += operation
-                case "-":
-                    if self.formula[-1] != "-":
-                        if self.formula == "0":
-                            self.formula = ""
-                        self.formula += operation
-                case "*":
-                    if self.formula[-1] != "*":
-                        if self.formula == "0":
-                            self.formula = ""
-                        self.formula += operation
-                case "/":
-                    if self.formula[-1] != "/":
-                        if self.formula == "0":
-                            self.formula = ""
-                        self.formula += operation
-                case _:
-                    if self.formula == "0":
-                        self.formula = ""
-                    self.formula += operation
-        except (SyntaxError, TypeError):
-            self.errormessage = "Syntax Error"
-        except ZeroDivisionError:
-            self.errormessage = "Zero Division Error"
-        self.Update()
+    def make_handler(self, value: ButtonsLabels) -> Callable[[], None]:
+        return lambda: self.controller.button_pressed(value)
 
-    def Update(self):
-        if self.formula == "":
+    def update(self, formula: str, error_message: str = "") -> None:
+        if formula == "":
             self.formula = "0"
-        self.lbl.config(text=self.formula)
-        self.erlbl.config(text=self.errormessage)
+            self.formula_label.config(text=self.formula)
+        else:
+            self.formula_label.config(text=formula)
+        self.error_label.config(text=error_message)
 
-    def Run(self):
-        self.root.mainloop()
+
+class CalculatorCalculation:
+    @staticmethod
+    def calculate_string(formula: str) -> tuple[str, str]:
+        try:
+            value = eval(formula)
+            if abs(value) > 1e10:
+                return "", "Too large"
+        except (SyntaxError, TypeError):
+            return "", "Syntax error"
+        except ZeroDivisionError:
+            return "", "Zero division error"
+
+        return str(eval(formula)), ""
+
+    @staticmethod
+    def calculate_power_string(formula: str) -> tuple[str, str]:
+        try:
+            value = eval(formula)
+            if abs(value) > 1e10:
+                return "", "Too large"
+        except (SyntaxError, TypeError):
+            return "", "Syntax error"
+        except ZeroDivisionError:
+            return "", "Zero division error"
+
+        return str(eval(formula) ** 2), ""
 
 
 if __name__ == "__main__":
-    calc = Calculator()
-    calc.Run()
+    root = tk.Tk()
+    calc = Calculator(root)
+    calc.set_calculator_visual()
+    calc.run()
